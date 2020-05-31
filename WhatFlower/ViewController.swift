@@ -15,6 +15,7 @@ import SwiftyJSON
 class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     @IBOutlet weak var imageView: UIImageView!
+    @IBOutlet weak var label: UILabel!
     
     let imagePicker = UIImagePickerController()
     let wikipediaURl = "https://en.wikipedia.org/w/api.php"
@@ -75,23 +76,24 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         //        ]
         let urlString = "\(wikipediaURl)?format=json&action=query&prop=extracts&titles=\(formattedName)&exintro&explaintext&redirects=true&indexpageids"
         AF.request(urlString).response { response in
-                guard let wikiData = response.data else {
-                    fatalError("Unable to get reponse data.")
-                }
-                
-                guard let json = try? JSON(data: wikiData) else {
-                    fatalError("Unable to convert data to JSON format.")
-                }
-                
-                guard let pageId = json["query"]["pageids"][0].string else {
-                    fatalError("Unable to get page id.")
-                }
-                
-                guard let description = json["query"]["pages"][pageId]["extract"].string else {
-                    fatalError("Unable to get description.")
-                }
-                
-                print(description)
+            guard let wikiData = response.data else {
+                fatalError("Unable to get reponse data.")
+            }
+            
+            guard let json = try? JSON(data: wikiData) else {
+                fatalError("Unable to convert data to JSON format.")
+            }
+            
+            guard let pageId = json["query"]["pageids"][0].string else {
+                fatalError("Unable to get page id.")
+            }
+            
+            guard let description = json["query"]["pages"][pageId]["extract"].string else {
+                fatalError("Unable to get description.")
+            }
+            
+            self.label.text = description
+            print(description)
         }
     }
     
