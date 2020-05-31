@@ -11,6 +11,7 @@ import CoreML
 import Vision
 import Alamofire
 import SwiftyJSON
+import SDWebImage
 
 class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
@@ -30,7 +31,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         
         if let userPickedImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
-            imageView.image = userPickedImage
+            //            imageView.image = userPickedImage
             
             guard let flowerImage = CIImage(image: userPickedImage) else {
                 fatalError("Could not convert UIImage into CIImage")
@@ -64,36 +65,41 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     
     func requestInfo(for flowerName: String) {
         
-        let formattedName = flowerName.replacingOccurrences(of: " ", with: "%20")
-        //        let parameters : [String:String] = [
-        //            "format" : "json",
-        //            "action" : "query",
-        //            "prop" : "extracts",
-        //            "exintro" : "",
-        //            "explaintext" : "",
-        //            "titles" : flowerName,
-        //            "redirects" : "1",
-        //        ]
-        let urlString = "\(wikipediaURl)?format=json&action=query&prop=extracts&titles=\(formattedName)&exintro&explaintext&redirects=true&indexpageids"
-        AF.request(urlString).response { response in
+        let parameters : [String:String] = [
+            "format" : "json",
+            "action" : "query",
+            "prop" : "extracts|pageimages",
+            "exintro" : "",
+            "explaintext" : "",
+            "titles" : flowerName,
+            "indexpageids" : "",
+            "redirects" : "1",
+            "pithumbsize" : "500"
+        ]
+        
+        AF.request(wikipediaURl, method: .get, parameters: parameters).response { response in
+            
             guard let wikiData = response.data else {
                 fatalError("Unable to get reponse data.")
             }
             
-            guard let json = try? JSON(data: wikiData) else {
+            guard let flowerJSON = try? JSON(data: wikiData) else {
                 fatalError("Unable to convert data to JSON format.")
             }
             
-            guard let pageId = json["query"]["pageids"][0].string else {
+            guard let pageId = flowerJSON["query"]["pageids"][0].string else {
                 fatalError("Unable to get page id.")
             }
             
-            guard let description = json["query"]["pages"][pageId]["extract"].string else {
+            guard let flowerDescription = flowerJSON["query"]["pages"][pageId]["extract"].string else {
                 fatalError("Unable to get description.")
             }
             
-            self.label.text = description
-            print(description)
+            let flowerImageURL = flowerJSON["query"]["pages"][pageId]["thumbnail"]["source"].stringValue
+            
+            self.imageView.sd_setImage(with: URL(string: flowerImageURL))
+            self.label.text = flowerDescription
+            print(flowerDescription)
         }
     }
     
@@ -102,5 +108,9 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         present(imagePicker, animated: true, completion: nil)
     }
     
+    @IBAction func photoPressed(_ sender: UIBarButtonItem) {
+        imagePicker.sourceType = .photoLibrary
+        present(imagePicker, animated: true, completion: nil)
+    }
 }
 
